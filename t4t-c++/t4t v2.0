@@ -11,15 +11,17 @@ brossage totalement hasardeux
 mode d'emploi
 choix du mode
   Rester appuyé jusqu'à obtention du mode désiré  :
-    1 led mode normal
-    2 leds mode random
-    3 leds mode hardcore
+    1 led mode normal (v1&2)
+    2 leds mode random (v1&2)
+    3 leds mode hardcore (v1)
     puis reviens à 1 led etc
 Mettre en pause ou en veille
   Appuyer sur le btn > les leds clignotent
   pour redémarer rappuyer jusqu'à ce que les leds effectuent un decompte
   si à la fin du decompte le bouton est toujours enfoncé le T4T se met en veille
-  
+ 
+ hardware proto : https://circuits.io/circuits/1828688-circuit-pour-brossage-de-dent
+ 
 */
 const int led[] = {12, 11, 10, 9, 8, 7}; // pins led
 const int tempsLedChargement = 100;//durée d'eclairage des leds lors du "menu"
