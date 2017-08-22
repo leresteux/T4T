@@ -1,0 +1,306 @@
+/* t4t v2.0 & V1.0 par leresteux julien
+  mode normal =
+  brossage de durée égale chaque partie
+  accélération régulière
+  mode random =
+  brossage de durée égale chaque partie
+  cycle de brossage irrégulier
+  mode hardcore =
+  brossage totalement hasardeux
+  ---
+  mode d'emploi
+  choix du mode
+  Rester appuyé jusqu'à obtention du mode désiré  :
+    1 led mode normal
+    2 leds mode random
+    3 leds mode hardcore
+    puis reviens à 1 led etc
+  Mettre en pause ou en veille
+  Appuyer sur le btn > les leds clignotent
+  pour redémarrer rappuyer jusqu'à ce que les leds effectuent un décompte
+  si à la fin du décompte le bouton est toujours enfoncé le T4T se met en veille
+
+*/
+#include <Servo.h>
+
+Servo servoTete;  // create servo object to control a servo
+Servo servoDos;  // create servo object to control a servo
+
+const int led[] = {10, 8, 11, 9, 12, 7}; // pins led
+const int tempsLedChargement = 100;//durée d'éclairage des leds lors du "menu"
+const int btn = 13;
+//new v2.0
+const int btn2 = 5;
+const int tempsCracha = 6000;
+int ob[] = {9, 9, 9, 9, 9, 9}; //stockage des LEDs
+
+int servoTeteMax = 110;
+int servoTeteMin = 70;
+int servoDosMax = 30;
+int servoDosMin = 10;
+
+int randTemps, sec , R, r, c;
+
+boolean ok = false, waiting = true,  etatBtn, modeMenu;
+
+int phase = 0;
+
+unsigned long duree = 0;
+
+//LES MODES
+void normalMode() {
+  Serial.print("normalMode");
+  delay(100);
+
+  for (int i = 0; i < 3; i++) {
+    blinkAll (0);
+  };
+  delay(1000);
+
+  //2 cycles led de 30 sec
+  for (int i = 0; i < 2; i++) {
+
+    ordreBrossage ();
+    lumiere(5000);//6*2*5000= 60sec
+  };
+  //pause cracha
+  cracha();
+  blinkAll(0);
+
+  //2 cycles led de 24 sec
+  for (int i = 0; i < 2; i++) {
+
+    ordreBrossage ();
+    lumiere(4000);//6*2*4000= 48sec -108
+  };
+  //pause cracha
+  cracha();
+  blinkAll(0);
+
+  //3 cycles led de 18 sec
+  for (int i = 0; i < 3; i++) {
+
+
+    ordreBrossage ();
+    lumiere(3000);//6*3*3000= 54sec -162
+  };
+  //2 cycles led de 12 sec
+  for (int i = 0; i < 2; i++) {
+    ordreBrossage ();
+    lumiere(2000);//6*2*2000= 24 sec -186
+  };
+
+  //cycle led de 6 sec
+  for (int i = 0; i < 1; i++) {
+    ordreBrossage ();
+    lumiere(1000);//6*1*1000= 6 sec -192 soit 3min et 12sec
+  };
+  //cycle led de fin
+  for (int i = 0; i < 3; i++) {
+    blinkAll (0);
+  }
+  Serial.println(":D");
+  modeMenu = 0;
+  waiting = true;
+
+}
+
+void randomMode() {
+  Serial.println("random Mode");
+  for (int i = 0; i < 3; i++) {
+    blinkAll (1);
+  }// les leds clignotent de facon hasardeuse
+  delay(2000);
+  bool cracha1 = false;
+  bool cracha2 = false;
+  delay(1000);
+  duree = 0;
+  while (duree < 190000) {
+    Serial.print("duree = ");
+    Serial.println(duree);
+    int randomSec = (random(1, 5) * 1000); //entre 1 et5
+    Serial.print("time ="); Serial.println(randomSec);
+    delay(2);
+    ordreBrossage ();
+    lumiere(randomSec);
+    if (duree >= 60000 && cracha1 == false) {
+      cracha();
+      cracha1 = true;
+    }
+    else if (duree >= 120000 && cracha2 == false) {
+      cracha();
+      cracha2 = true;
+    }
+
+  };
+  Serial.println("random Mode Over");
+  modeMenu = 0;
+  blinkAll(1);
+  waiting = true;
+}
+// mini fonctions
+
+void blinkAll (int mode) {
+  Serial.println("blinAll");
+
+  //mode random ==led clignote hasardeusement
+  if (mode == 1) {//hasard
+    ordreBrossage();
+    delay(50);
+    lumiere(tempsLedChargement);
+
+  }
+  //mode normal
+  else if (mode == 0) { //chenillard
+    for (int i = 0; i < 6; i++) {
+      digitalWrite(led[i], HIGH);
+      delay(tempsLedChargement);
+      digitalWrite(led[i], LOW);
+      delay(tempsLedChargement);
+
+    }
+  }
+}
+
+//ordre hasardeux du brossage  des dents
+void ordreBrossage() {
+  //remplit un array de 6 cases avec 012345 en evitant les doublons
+  for (c = 0; c < 6; c++) {
+    ok = false;
+    while (ok == false) {
+      ok = true;
+
+      R = random(0, 6);
+      for (int j = 0; j < c; j++) {
+        if (R == ob[j]) {
+          ok = false;
+        };
+      };
+    };
+    ob[c] = R;
+  };
+  //print les led allumées
+  for (int a = 0; a < 6; a++) {
+    Serial.print(ob[a]);
+  };
+}
+//1 cycle de led
+void lumiere(int Time) {
+  for (int z = 0; z < 6; z++) {
+
+    //on allume et étends led
+    int ledaallumer = ob[z];
+
+    digitalWrite(led[ledaallumer], HIGH);
+    Serial.println(led[ledaallumer]);
+    //movement de tete
+    if (led[ledaallumer] == 10 || led[ledaallumer] == 8) {
+      servoTete.write(servoTeteMax);
+    }
+    else {
+      if (led[ledaallumer] == 12 || led[ledaallumer] == 7) {
+        servoTete.write(servoTeteMin);
+      }
+
+      else {
+        servoTete.write(90);
+      }
+    }
+    //fin
+    delay(Time);
+    duree = duree + Time;
+    digitalWrite(led[ledaallumer], LOW);
+  }
+}
+
+void cracha() {
+  for (int i = 0; i < 6; i++) {
+    digitalWrite(led[i], HIGH);
+  }
+  servoDos.write(50);
+  delay(tempsCracha);
+  for (int i = 0; i < 6; i++) {
+    digitalWrite(led[i], LOW);
+  }
+
+  servoDos.write(10);
+}
+
+
+void start () {
+  Serial.print("start");
+
+  /* v2.0
+  */
+  etatBtn = digitalRead(btn);
+  if (etatBtn = false)
+
+  { modeMenu = 1;
+    digitalWrite(led[0], HIGH);
+    modeMenu = 1;// led 1 == lancement menu de selection
+    servoDos.write(servoDosMax);
+    delay(500);
+    servoDos.write(servoDosMin);
+    delay(1000);
+  }
+  else {
+    modeMenu = 2;
+    digitalWrite(led[1], HIGH); // led 2 == lancement menu de selection
+    
+    servoDos.write(servoDosMax);
+    delay(500);
+    servoDos.write(servoDosMin);
+    delay(500);
+    servoDos.write(servoDosMax);
+    delay(500);
+    servoDos.write(servoDosMin);
+    delay(1000);
+    delay(1000);
+  }
+
+switch (modeMenu) {
+case 1:
+
+  digitalWrite(led[0], LOW);
+
+  normalMode();
+  break;
+case 2:
+  digitalWrite(led[0], LOW);
+  digitalWrite(led[1], LOW);
+
+  randomMode();
+  break;
+default:
+  digitalWrite(led[0], LOW);
+  digitalWrite(led[1], LOW);
+  digitalWrite(led[2], LOW);
+
+  break;
+}
+}
+
+
+void setup() {
+  for (int i = 0; i < 6; i++) {
+    pinMode(led[i], OUTPUT);
+  };
+
+  pinMode(btn, INPUT);
+  Serial.begin(9600);
+  Serial.println("welcome");
+  servoTete.attach(3);//tete
+  servoDos.attach(2);//dos
+  delay(500);
+  servoTete.write(90);
+  servoDos.write(servoDosMin);
+  delay(1000);
+}
+
+//au demarrage du arduino
+void loop() {
+  Serial.print (".");
+  R = random(0, 6); //
+  start();
+
+}
